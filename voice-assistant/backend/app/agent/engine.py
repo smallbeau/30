@@ -43,6 +43,24 @@ class AgentEngine:
         self.short_mem.add_message(session_id, "user", user_text)
         intent = classify_intent(user_text)
 
+        if intent.intent == "greeting":
+            reply = f"你好！有什么可以帮你的？"
+            self.short_mem.add_message(session_id, "assistant", reply)
+            return AgentResult(text=reply, source="intent")
+
+        if intent.intent == "goodbye":
+            reply = "再见！有需要随时找我。"
+            self.short_mem.add_message(session_id, "assistant", reply)
+            return AgentResult(text=reply, source="intent")
+
+        if intent.intent == "help":
+            reply = (
+                "我可以帮你：查天气、翻译、设闹钟、搜索、记备忘录。"
+                "直接说出你的需求即可。"
+            )
+            self.short_mem.add_message(session_id, "assistant", reply)
+            return AgentResult(text=reply, source="intent")
+
         decision = self.retriever.decide(user_text)
         if decision.mode == "direct":
             self.short_mem.add_message(session_id, "assistant", decision.context)
@@ -70,6 +88,25 @@ class AgentEngine:
 
     def stream_handle(self, user_text: str, session_id: str = "default") -> Iterator[str]:
         self.short_mem.add_message(session_id, "user", user_text)
+        intent = classify_intent(user_text)
+
+        if intent.intent == "greeting":
+            reply = "你好！有什么可以帮你的？"
+            self.short_mem.add_message(session_id, "assistant", reply)
+            yield reply
+            return
+
+        if intent.intent == "goodbye":
+            reply = "再见！有需要随时找我。"
+            self.short_mem.add_message(session_id, "assistant", reply)
+            yield reply
+            return
+
+        if intent.intent == "help":
+            reply = "我可以帮你：查天气、翻译、设闹钟、搜索、记备忘录。直接说出你的需求即可。"
+            self.short_mem.add_message(session_id, "assistant", reply)
+            yield reply
+            return
 
         decision = self.retriever.decide(user_text)
         if decision.mode == "direct":

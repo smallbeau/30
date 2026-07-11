@@ -31,3 +31,31 @@ def test_agent_skill_then_llm():
     engine = AgentEngine(FakeLLM(), FakeRetriever(), skills=skills)
     result = engine.handle("请翻译 hello")
     assert result.source in {"skill", "llm"}
+
+
+def test_agent_greeting_intent():
+    engine = AgentEngine(FakeLLM(), FakeRetriever(), skills=[])
+    result = engine.handle("你好")
+    assert result.source == "intent"
+    assert "帮你的" in result.text
+
+
+def test_agent_goodbye_intent():
+    engine = AgentEngine(FakeLLM(), FakeRetriever(), skills=[])
+    result = engine.handle("再见")
+    assert result.source == "intent"
+    assert "再见" in result.text
+
+
+def test_agent_help_intent():
+    engine = AgentEngine(FakeLLM(), FakeRetriever(), skills=[])
+    result = engine.handle("你会什么")
+    assert result.source == "intent"
+    assert "天气" in result.text
+
+
+def test_agent_stream_greeting():
+    engine = AgentEngine(FakeLLM(), FakeRetriever(), skills=[])
+    tokens = list(engine.stream_handle("你好"))
+    assert len(tokens) == 1
+    assert "帮你的" in tokens[0]

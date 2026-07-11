@@ -25,6 +25,7 @@ def get_pipeline() -> VoicePipeline:
         a = cfg_data.get("asr", {})
         t = cfg_data.get("tts", {})
         p = cfg_data.get("pipeline", {})
+        vad_data = yaml.safe_load(s.vad_config_path.read_text(encoding="utf-8")) or {}
         _pipeline = VoicePipeline(VoicePipelineConfig(
             wake_enabled=w.get("enabled", False),
             wake_keyword=w.get("keyword", "小助手"),
@@ -36,7 +37,11 @@ def get_pipeline() -> VoicePipeline:
             tts_provider=t.get("primary", "edge-tts"),
             tts_voice=t.get("edge_tts", {}).get("voice", "zh-CN-XiaoxiaoNeural"),
             auto_send_audio=p.get("auto_send_audio", True),
-            vad_silence_ms=p.get("vad_silence_ms", 500),
+            vad_silence_ms=vad_data.get("silence_threshold_ms", 500),
+            vad_threshold=vad_data.get("threshold", 0.5),
+            vad_min_speech_ms=vad_data.get("min_speech_duration_ms", 300),
+            vad_min_silence_ms=vad_data.get("min_silence_duration_ms", 200),
+            vad_speech_pad_ms=vad_data.get("speech_pad_ms", 300),
         ))
     return _pipeline
 
@@ -98,3 +103,51 @@ def pipeline_status():
         "wake_enabled": p.config.wake_enabled,
         "wake_keyword": p.config.wake_keyword,
     }
+
+
+@router.websocket("/voice/full_duplex")
+async def voice_full_duplex(ws: WebSocket, session_id: str = "default", mode: str = "fallback"):
+    await ws.accept()
+    pipeline = get_pipeline()
+    from app.voice.full_duplex.gateway import FullDuplexGateway
+    gateway = FullDuplexGateway(pipeline)
+    session = gateway.create_session(session_id, mode)
+    engine = get_engine()
+    try:
+        while True:
+            data = await ws.receive_json()
+            typ = data.get("type")
+            if typ == "audio":
+                pcm = base64.b64decode(data.get("data", ""))
+                if not pcm:
+                    continue
+                text = await gateway.process_audio_frame(session_id, pcm)
+                if text:
+                    await ws.send_json({"type": "transcription", "text": text})
+                    parts: list[str] = []
+                    async for token in gateway.process_text(session_id, text, _stream_wrapper(engine)):
+                        parts.append(token)
+                        await ws.send_json({"type": "token", "text": token})
+                    full = "".join(parts)
+                    if full:
+                        audio = await pipeline.synthesize(full)
+                        await ws.send_json({
+                            "type": "audio", "format": "mp3",
+                            "data": base64.b64encode(audio).decode("ascii"),
+                        })
+                    await ws.send_json({"type": "done"})
+            elif typ == "interrupt":
+                await ws.send_json({"type": "interrupted"})
+            elif typ == "end":
+                gateway.end_session(session_id)
+                await ws.send_json({"type": "ended"})
+                break
+    except WebSocketDisconnect:
+        gateway.end_session(session_id)
+
+
+def _stream_wrapper(engine):
+    async def _stream(text: str, session_id: str):
+        for token in engine.stream_handle(text, session_id):
+            yield token
+    return _stream

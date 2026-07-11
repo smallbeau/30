@@ -22,6 +22,10 @@ class VoicePipelineConfig:
     tts_voice: str = "zh-CN-XiaoxiaoNeural"
     auto_send_audio: bool = True
     vad_silence_ms: int = 500
+    vad_threshold: float = 0.5
+    vad_min_speech_ms: int = 300
+    vad_min_silence_ms: int = 200
+    vad_speech_pad_ms: int = 300
 
 
 @dataclass
@@ -51,7 +55,9 @@ class VoicePipeline:
             self.config.wake_keyword, self.config.wake_sensitivity,
         )
         self.vad = EnergyVAD(
-            threshold=0.5, silence_ms=self.config.vad_silence_ms, sample_rate=16000,
+            threshold=self.config.vad_threshold,
+            silence_ms=self.config.vad_silence_ms,
+            sample_rate=16000,
         )
 
     async def transcribe_audio(self, audio_bytes: bytes) -> str:

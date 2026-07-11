@@ -63,7 +63,11 @@ class FullDuplexGateway:
         session.last_activity = time.time()
 
         if session.mode == "fallback":
-            text = self.pipeline.asr.transcribe(pcm, "zh")
+            import asyncio
+            loop = asyncio.get_running_loop()
+            text = await loop.run_in_executor(
+                None, lambda: self.pipeline.asr.transcribe(pcm, "zh")
+            )
             return text.strip() or None
         return None
 
