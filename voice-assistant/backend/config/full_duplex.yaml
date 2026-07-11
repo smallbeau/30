@@ -1,0 +1,16 @@
+mode: fallback
+mini_omni:
+  url: http://localhost:60808
+  auto_start: false
+  server_script: third_party/mini-omni/server.py
+  timeout: 30.0
+fallback:
+  vad_silence_ms: 500
+  asr_provider: mock
+  tts_provider: edge-tts
+limits:
+  max_pcm_per_frame: 102400
+  max_pcm_total: 31457280
+  max_session_duration_sec: 1800
+avatar:
+  hide_on_full_duplex: true

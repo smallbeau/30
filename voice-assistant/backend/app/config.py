@@ -22,7 +22,9 @@ class Settings(BaseSettings):
     knowledge_docs_dir: Path = ROOT / "knowledge" / "docs"
     voice_config_path: Path = ROOT / "config" / "voice.yaml"
     memory_config_path: Path = ROOT / "config" / "memory.yaml"
+    full_duplex_config_path: Path = ROOT / "config" / "full_duplex.yaml"
     api_key: str = ""
+    cors_origins: list[str] = ["*"]
 
     default_system_prompt: str = (
         "你是中文语音助手。优先简洁口语化回答。"
