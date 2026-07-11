@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     memory_config_path: Path = ROOT / "config" / "memory.yaml"
     full_duplex_config_path: Path = ROOT / "config" / "full_duplex.yaml"
     api_key: str = ""
+
+    mysql_host: str = "127.0.0.1"
+    mysql_port: int = 3306
+    mysql_user: str = "root"
+    mysql_password: str = "root"
+    mysql_database: str = "voice_assistant"
+
     cors_origins: list[str] = ["*"]
 
     default_system_prompt: str = (

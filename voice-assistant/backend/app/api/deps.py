@@ -8,9 +8,7 @@ from app.skill.loader import SkillLoader
 from app.rag.indexer import KnowledgeIndexer
 from app.rag.retriever import KnowledgeRetriever
 from app.agent.engine import AgentEngine
-from app.memory.short_term import ShortTermMemory
-from app.memory.long_term import LongTermMemory
-from app.memory.vector import VectorMemory
+from app.database import SessionStore, LongTermStore, MySQLVectorStore
 
 
 @lru_cache
@@ -31,17 +29,14 @@ def get_engine() -> AgentEngine:
     st = mcfg.get("short_term", {})
     lt = mcfg.get("long_term", {})
     vm = mcfg.get("vector", {})
-    short_mem = ShortTermMemory(
-        db_path=st.get("db_path", "data/sessions.db"),
+    short_mem = SessionStore(
         max_sessions=int(st.get("max_sessions", 100)),
         session_ttl_minutes=int(st.get("session_ttl_minutes", 1440)),
     )
-    long_mem = LongTermMemory(
-        db_path="data/long_term.json",
+    long_mem = LongTermStore(
         max_entries=int(lt.get("max_summaries", 100)),
     )
-    vec_mem = VectorMemory(
-        db_path="data/vector_memory.json",
+    vec_mem = MySQLVectorStore(
         enabled=bool(vm.get("enabled", False)),
     )
     return AgentEngine(
@@ -51,12 +46,11 @@ def get_engine() -> AgentEngine:
 
 
 @lru_cache
-def get_memory() -> ShortTermMemory:
+def get_memory() -> SessionStore:
     s = get_settings()
     mcfg = yaml.safe_load(s.memory_config_path.read_text(encoding="utf-8")) or {}
     st = mcfg.get("short_term", {})
-    return ShortTermMemory(
-        db_path=st.get("db_path", "data/sessions.db"),
+    return SessionStore(
         max_sessions=int(st.get("max_sessions", 100)),
         session_ttl_minutes=int(st.get("session_ttl_minutes", 1440)),
     )

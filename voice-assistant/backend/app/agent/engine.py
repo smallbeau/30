@@ -5,9 +5,7 @@ from dataclasses import dataclass
 
 from app.agent.context import SessionContext
 from app.agent.intent import classify_intent
-from app.memory.long_term import LongTermMemory
-from app.memory.short_term import ShortTermMemory
-from app.memory.vector import VectorMemory
+from app.database import SessionStore, LongTermStore, MySQLVectorStore
 from app.skill.loader import Skill
 from app.skill.matcher import SkillMatcher
 from app.skill.executor import SkillExecutor
@@ -21,17 +19,17 @@ class AgentResult:
 
 class AgentEngine:
     def __init__(self, llm, retriever, skills: list[Skill], system_prompt: str = "",
-                 short_mem: ShortTermMemory | None = None,
-                 long_mem: LongTermMemory | None = None,
-                 vec_mem: VectorMemory | None = None):
+                 short_mem: SessionStore | None = None,
+                 long_mem: LongTermStore | None = None,
+                 vec_mem: MySQLVectorStore | None = None):
         self.llm = llm
         self.retriever = retriever
         self.matcher = SkillMatcher(skills)
         self.executor = SkillExecutor(llm)
         self.system_prompt = system_prompt or "你是中文助手。"
-        self.short_mem = short_mem or ShortTermMemory()
-        self.long_mem = long_mem or LongTermMemory()
-        self.vec_mem = vec_mem or VectorMemory()
+        self.short_mem = short_mem or SessionStore()
+        self.long_mem = long_mem or LongTermStore()
+        self.vec_mem = vec_mem or MySQLVectorStore()
         self.sessions: dict[str, SessionContext] = {}
 
     def get_session(self, session_id: str = "default") -> SessionContext:
