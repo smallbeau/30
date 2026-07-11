@@ -1,0 +1,22 @@
+wake:
+  enabled: false
+  keyword: 小助手
+  sensitivity: 0.5
+  model_path: ""
+asr:
+  provider: mock
+  model: base
+  language: zh
+  device: cpu
+  compute_type: int8
+tts:
+  primary: edge-tts
+  edge_tts:
+    voice: zh-CN-XiaoxiaoNeural
+  cosyvoice:
+    model: CosyVoice-300M
+    device: cpu
+pipeline:
+  mode: text-first
+  auto_send_audio: true
+  vad_silence_ms: 500

@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     vad_config_path: Path = ROOT / "config" / "vad.yaml"
     skills_dir: Path = ROOT / "skills"
     knowledge_docs_dir: Path = ROOT / "knowledge" / "docs"
+    voice_config_path: Path = ROOT / "config" / "voice.yaml"
     api_key: str = ""
 
     default_system_prompt: str = (
