@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.api import chat, knowledge, skill, voice
+from app.api import chat, knowledge, memory, skill, voice
 from app.config import get_settings
 
 settings = get_settings()
@@ -32,6 +32,7 @@ app.include_router(chat.router, prefix="/api", dependencies=[Depends(verify_toke
 app.include_router(skill.router, prefix="/api", dependencies=[Depends(verify_token)])
 app.include_router(knowledge.router, prefix="/api", dependencies=[Depends(verify_token)])
 app.include_router(voice.router, prefix="/api", dependencies=[Depends(verify_token)])
+app.include_router(memory.router, prefix="/api", dependencies=[Depends(verify_token)])
 
 
 @app.get("/health")

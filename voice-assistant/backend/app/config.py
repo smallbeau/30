@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     skills_dir: Path = ROOT / "skills"
     knowledge_docs_dir: Path = ROOT / "knowledge" / "docs"
     voice_config_path: Path = ROOT / "config" / "voice.yaml"
+    memory_config_path: Path = ROOT / "config" / "memory.yaml"
     api_key: str = ""
 
     default_system_prompt: str = (

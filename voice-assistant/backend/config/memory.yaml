@@ -1,0 +1,12 @@
+short_term:
+  db_path: data/sessions.db
+  max_sessions: 100
+  session_ttl_minutes: 1440
+long_term:
+  enabled: true
+  max_summaries: 100
+  summary_interval: 10
+vector:
+  enabled: false
+  provider: local
+  model: paraphrase-multilingual-MiniLM-L12-v2

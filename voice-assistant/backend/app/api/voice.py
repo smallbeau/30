@@ -1,16 +1,51 @@
+from __future__ import annotations
+
+import asyncio
 import base64
+import json
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.api.deps import get_engine
+from app.voice.pipeline import VoicePipeline, VoicePipelineConfig
 from app.voice.tts import synthesize_mp3
 
 router = APIRouter(tags=["voice"])
+_pipeline: VoicePipeline | None = None
+
+
+def get_pipeline() -> VoicePipeline:
+    global _pipeline
+    if _pipeline is None:
+        import yaml
+        from app.config import get_settings
+        s = get_settings()
+        cfg_data = yaml.safe_load(s.voice_config_path.read_text(encoding="utf-8")) or {}
+        w = cfg_data.get("wake", {})
+        a = cfg_data.get("asr", {})
+        t = cfg_data.get("tts", {})
+        p = cfg_data.get("pipeline", {})
+        _pipeline = VoicePipeline(VoicePipelineConfig(
+            wake_enabled=w.get("enabled", False),
+            wake_keyword=w.get("keyword", "小助手"),
+            wake_sensitivity=w.get("sensitivity", 0.5),
+            asr_provider=a.get("provider", "mock"),
+            asr_model=a.get("model", "base"),
+            asr_device=a.get("device", "cpu"),
+            asr_language=a.get("language", "zh"),
+            tts_provider=t.get("primary", "edge-tts"),
+            tts_voice=t.get("edge_tts", {}).get("voice", "zh-CN-XiaoxiaoNeural"),
+            auto_send_audio=p.get("auto_send_audio", True),
+            vad_silence_ms=p.get("vad_silence_ms", 500),
+        ))
+    return _pipeline
 
 
 @router.websocket("/voice/ws")
 async def voice_ws(ws: WebSocket):
     await ws.accept()
     engine = get_engine()
+    pipeline = get_pipeline()
     speaking = False
     try:
         while True:
@@ -34,7 +69,7 @@ async def voice_ws(ws: WebSocket):
                     await ws.send_json({"type": "token", "text": token})
                 full = "".join(parts)
                 if speaking and full:
-                    audio = await synthesize_mp3(full)
+                    audio = await pipeline.synthesize(full)
                     await ws.send_json({
                         "type": "audio",
                         "format": "mp3",
@@ -42,5 +77,24 @@ async def voice_ws(ws: WebSocket):
                     })
                 await ws.send_json({"type": "done"})
                 speaking = False
+            elif typ == "audio":
+                pcm = base64.b64decode(data.get("data", ""))
+                if not pcm:
+                    continue
+                text = await pipeline.transcribe_audio(pcm)
+                if text.strip():
+                    await ws.send_json({"type": "transcription", "text": text.strip()})
     except WebSocketDisconnect:
         return
+
+
+@router.get("/voice/pipeline")
+def pipeline_status():
+    p = get_pipeline()
+    return {
+        "asr_available": p.asr.available,
+        "asr_provider": p.config.asr_provider,
+        "tts_provider": p.config.tts_provider,
+        "wake_enabled": p.config.wake_enabled,
+        "wake_keyword": p.config.wake_keyword,
+    }
