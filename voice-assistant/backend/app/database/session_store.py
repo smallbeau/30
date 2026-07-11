@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from app.database.mysql import get_connection
+from app.database.mysql import get_connection, close_pool
 
 
 class SessionStore:
@@ -120,7 +120,7 @@ class SessionStore:
             conn.close()
 
     def close(self) -> None:
-        pass
+        close_pool()
 
 
 class LongTermStore:

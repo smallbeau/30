@@ -117,6 +117,11 @@ async def voice_full_duplex(ws: WebSocket, session_id: str = "default", mode: st
     gateway = FullDuplexGateway(pipeline)
     session = gateway.create_session(session_id, mode)
     engine = get_engine()
+
+    async def _stream_handle(text: str, session_id: str):
+        for token in engine.stream_handle(text, session_id):
+            yield token
+
     try:
         while True:
             data = await ws.receive_json()
@@ -129,7 +134,7 @@ async def voice_full_duplex(ws: WebSocket, session_id: str = "default", mode: st
                 if text:
                     await ws.send_json({"type": "transcription", "text": text})
                     parts: list[str] = []
-                    async for token in gateway.process_text(session_id, text, _stream_wrapper(engine)):
+                    async for token in gateway.process_text(session_id, text, _stream_handle):
                         parts.append(token)
                         await ws.send_json({"type": "token", "text": token})
                     full = "".join(parts)
@@ -156,8 +161,4 @@ async def voice_full_duplex(ws: WebSocket, session_id: str = "default", mode: st
         gateway.end_session(session_id)
 
 
-def _stream_wrapper(engine):
-    async def _stream(text: str, session_id: str):
-        for token in engine.stream_handle(text, session_id):
-            yield token
-    return _stream
+

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import atexit
+
 from dbutils.pooled_db import PooledDB
 import pymysql
 
@@ -58,6 +60,16 @@ def get_pool() -> PooledDB:
 
 def get_connection() -> pymysql.connections.Connection:
     return get_pool().connection()
+
+
+def close_pool() -> None:
+    global _pool
+    if _pool is not None:
+        _pool.close()
+        _pool = None
+
+
+atexit.register(close_pool)
 
 
 def init_tables() -> None:
