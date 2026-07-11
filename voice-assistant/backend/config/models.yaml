@@ -1,0 +1,12 @@
+models:
+  - name: deepseek-chat
+    base_url: https://api.deepseek.com/v1
+    api_key_env: DEEPSEEK_API_KEY
+    model: deepseek-chat
+    priority: 1
+  - name: local-ollama
+    base_url: http://localhost:11434/v1
+    api_key_env: ""
+    model: llama3
+    priority: 99
+default_model: deepseek-chat

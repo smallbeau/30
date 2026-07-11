@@ -1,0 +1,10 @@
+chunking:
+  default_size: 500
+  overlap: 50
+retrieval:
+  top_k: 5
+  threshold_high: 0.75
+  threshold_low: 0.40
+sources:
+  local_path: knowledge/docs
+  auto_watch: false
