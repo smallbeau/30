@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+
+# IDE
+.vscode/
+.zed/
+.idea/
+*.swp
+*.swo
+
+# Agent/Tool configs (local only)
+.codex/
+.cursor/
+.gemini/
+.mimocode/
+opencode.json
+.mcp.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
