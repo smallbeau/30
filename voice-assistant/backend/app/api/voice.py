@@ -91,6 +91,11 @@ async def voice_ws(ws: WebSocket):
                     await ws.send_json({"type": "transcription", "text": text.strip()})
     except WebSocketDisconnect:
         return
+    except (ValueError, json.JSONDecodeError):
+        try:
+            await ws.send_json({"type": "error", "detail": "invalid message"})
+        except Exception:
+            pass
 
 
 @router.get("/voice/pipeline")
@@ -109,7 +114,6 @@ def pipeline_status():
 async def voice_full_duplex(ws: WebSocket, session_id: str = "default", mode: str = "fallback"):
     await ws.accept()
     pipeline = get_pipeline()
-    from app.voice.full_duplex.gateway import FullDuplexGateway
     gateway = FullDuplexGateway(pipeline)
     session = gateway.create_session(session_id, mode)
     engine = get_engine()
@@ -143,6 +147,12 @@ async def voice_full_duplex(ws: WebSocket, session_id: str = "default", mode: st
                 await ws.send_json({"type": "ended"})
                 break
     except WebSocketDisconnect:
+        gateway.end_session(session_id)
+    except PCMBufferLimitError as e:
+        await ws.send_json({"type": "error", "detail": str(e)})
+        gateway.end_session(session_id)
+    except (ValueError, json.JSONDecodeError):
+        await ws.send_json({"type": "error", "detail": "invalid message"})
         gateway.end_session(session_id)
 
 
